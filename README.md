@@ -9,8 +9,8 @@ A first draft specification can be found [here](https://github.com/Microsoft/lan
 - `> git clone this repository`
 - `> npm install`
 - `> npm run compile`
-- `> npm run lsif-ts` runs the indexer over the samples/typescript directory
-- `> npm run lsif-ts-all` runs the indexed over the samples/typescript directory and pipes the output to the npm moniker rewriter.
+- `> npm run lsif-ts` runs the indexer over the `samples/typescript` directory
+- `> npm run lsif-ts-all` runs the indexed over the `samples/typescript` directory and pipes the output to the npm moniker rewriter.
 
 Please note that the tools are work in progress and that we have not done any extensive testing so far. Known issues are:
 
@@ -23,7 +23,7 @@ Please note that the tools are work in progress and that we have not done any ex
 
 There is also an [extension for VS Code](https://github.com/Microsoft/vscode-lsif-extension) that can serve the content of a LSIF JSON file. Consider you have dumped the content of a workspace into an LSIF JSON file then you can use the extension to serve the supported LSP requests. This works as follows:
 
-- follow the steps in 'How to Run the tools` above.
+- follow the steps in `How to Run the tools` above.
 - clone the example you want to produce a index for into a sibling directory. For example https://github.com/Microsoft/vscode-uri.git.
 - cd into the workspace folder of the example.
 - `> npm install`
