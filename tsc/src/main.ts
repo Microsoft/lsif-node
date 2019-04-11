@@ -20,7 +20,7 @@ interface Options {
 	version: boolean;
 	outputFormat: 'json' | 'line' | 'vis' | 'graphSON';
 	id: 'number' | 'uuid';
-	projectRoot: string | undefined;
+	project: string | undefined;
 	noContents: boolean;
 	inferTypings: boolean;
 }
@@ -40,7 +40,7 @@ namespace Options {
 		version: false,
 		outputFormat: 'line',
 		id: 'number',
-		projectRoot: undefined,
+		project: undefined,
 		noContents: false,
 		inferTypings: false,
 	};
@@ -49,7 +49,7 @@ namespace Options {
 		{ id: 'help', type: 'boolean', alias: 'h', default: false, description: 'output usage information'},
 		{ id: 'outputFormat', type: 'string', default: 'line', values: ['line', 'json'], description: 'Specifies the output format. Allowed values are: \'line\' and \'json\'.'},
 		{ id: 'id', type: 'string', default: 'number', values: ['number', 'uuid'], description: 'Specifies the id format. Allowed values are: \'number\' and \'uuid\'.'},
-		{ id: 'projectRoot', type: 'string', default: undefined, description: 'Specifies the project root. Defaults to the location of the [tj]sconfig.json file.'},
+		{ id: 'project', type: 'string', alias: 'p', default: undefined, description: 'Specifies the project root. Defaults to the location of the [tj]sconfig.json file.'},
 		{ id: 'noContents', type: 'boolean', default: false, description: 'File contents will not be embedded into the dump.'},
 		{ id: 'inferTypings', type: 'boolean', default: false, description: 'Infer typings for JavaScript npm modules.'}
 	];
@@ -131,17 +131,17 @@ async function processProject(config: ts.ParsedCommandLine, options: Options, em
 		return undefined;
 	}
 
-	if (options.projectRoot === undefined) {
-		options.projectRoot = tsconfigFileName !== undefined ? path.dirname(tsconfigFileName) : process.cwd();
+	if (options.project === undefined) {
+		options.project = tsconfigFileName !== undefined ? path.dirname(tsconfigFileName) : process.cwd();
 	}
-	options.projectRoot = tss.normalizePath(options.projectRoot);
+	options.project = tss.normalizePath(options.project);
 
 	if (options.inferTypings) {
 		if (config.options.types !== undefined) {
 			const start = tsconfigFileName !== undefined ? tsconfigFileName : process.cwd();
-			await typingsInstaller.installTypings(options.projectRoot, start, config.options.types);
+			await typingsInstaller.installTypings(options.project, start, config.options.types);
 		} else {
-			await typingsInstaller.guessTypings(options.projectRoot, tsconfigFileName !== undefined ? path.dirname(tsconfigFileName) : process.cwd());
+			await typingsInstaller.guessTypings(options.project, tsconfigFileName !== undefined ? path.dirname(tsconfigFileName) : process.cwd());
 		}
 	}
 
@@ -259,7 +259,7 @@ async function run(this: void, args: string[]): Promise<void> {
 	const config: ts.ParsedCommandLine = ts.parseCommandLine(args);
 	const idGenerator = createIdGenerator(options);
 	const emitter = createEmitter(options, idGenerator);
-	let projectRoot = options.projectRoot;
+	let projectRoot = options.project;
 	if (projectRoot !== undefined && !path.isAbsolute(projectRoot)) {
 		projectRoot = path.join(process.cwd(), projectRoot);
 	}

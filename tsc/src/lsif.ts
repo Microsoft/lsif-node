@@ -1101,7 +1101,7 @@ export interface ProjectInfo {
 }
 
 export interface Options {
-	projectRoot: string;
+	project: string;
 	noContents: boolean;
 }
 
@@ -1143,7 +1143,7 @@ class Visitor implements SymbolItemContext {
 		})
 		this.emit(this.vertex.metaData(Version));
 		this.project = this.vertex.project();
-		this.projectRoot = options.projectRoot;
+		this.projectRoot = options.project;
 		const configLocation = tsConfigFile !== undefined ? path.dirname(tsConfigFile) : undefined;
 		let compilerOptions = this.program.getCompilerOptions();
 		if (compilerOptions.outDir !== undefined) {
