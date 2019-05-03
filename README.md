@@ -6,7 +6,7 @@ A first draft specification can be found [here](https://github.com/Microsoft/lan
 
 ## How to Run the tools
 
-- `> npm installl -g lsif-tsc` install the tsc LSIF tool.
+- `> npm install -g lsif-tsc` install the tsc LSIF tool.
 - `> lsif-tsc -p .\tsconfig.json` creates a LSIF dump for the given typescript project. Output format is new line separated JSON.
 
 If the project provides and npm package or is depending on other npm modules the TypeScript monikers can be converted into stable npm monikers. To do so run
