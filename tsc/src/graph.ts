@@ -40,14 +40,19 @@ export class VertexBuilder {
 		return this.options.emitSource;
 	}
 
-	public metaData(version: string, projectRoot: string): MetaData {
+	public metaData(version: string, projectRoot: string, toolInfo?: {
+		name: string
+		version?: string
+		args?: string[]
+	}): MetaData {
 		return {
 			id: this.nextId(),
 			type: ElementTypes.vertex,
 			label: VertexLabels.metaData,
 			version,
 			projectRoot,
-			positionEncoding: 'utf-16'
+			positionEncoding: 'utf-16',
+			toolInfo
 		};
 	}
 

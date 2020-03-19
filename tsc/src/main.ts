@@ -12,6 +12,7 @@ import * as ts from 'typescript';
 import * as tss from './typescripts';
 
 import { Id } from 'lsif-protocol';
+import { toolVersion } from './consts';
 import { Emitter, EmitterModule } from './emitters/emitter';
 import { TypingsInstaller } from './typings';
 import { lsif, ProjectInfo, Options as VisitorOptions } from './lsif';
@@ -246,14 +247,14 @@ async function run(this: void, args: string[]): Promise<void> {
 	const options: Options = Object.assign(Options.defaults, minimist(process.argv.slice(2), minOpts));
 
 	if (options.version) {
-		console.log(require('../package.json').version);
+		console.log(toolVersion);
 		return;
 	}
 
 	let buffer: string[] = [];
 	if (options.help) {
 		buffer.push(`Languag Server Index Format tool for TypeScript`);
-		buffer.push(`Version: ${require('../package.json').version}`);
+		buffer.push(`Version: ${toolVersion}`);
 		buffer.push('');
 		buffer.push(`Usage: lsif-tsc [options][tsc options]`);
 		buffer.push('');

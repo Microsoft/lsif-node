@@ -9,17 +9,16 @@ import * as path from 'path';
 import { URI } from 'vscode-uri';
 import * as ts from 'typescript';
 
-import * as tss from './typescripts';
-
 import {
 	lsp, Vertex, Edge, Project, Document, Id, ReferenceResult, RangeTagTypes, RangeBasedDocumentSymbol,
 	ResultSet, DefinitionRange, DefinitionResult, MonikerKind, ItemEdgeProperties,
 	Version, Range, EventKind, TypeDefinitionResult
 } from 'lsif-protocol';
 
+import { toolVersion } from './consts';
 import { VertexBuilder, EdgeBuilder, Builder } from './graph';
-
 import { Emitter } from './emitters/emitter';
+import * as tss from './typescripts';
 import { LRUCache } from './utils/linkedMap';
 
 interface Disposable {
@@ -474,14 +473,17 @@ class StandardSymbolData extends SymbolData {
 			throw new Error (`Partition for symbol ${this.getId()} have already been cleared`);
 		}
 		if (node === this.scope) {
+			if (node.getSourceFile().isDeclarationFile) {
+				// Declaration files may have more than one partition as declarations are
+				// referenced from multiple sources without an explicit import. This will
+				// short-circuit the check below and will also keep the symbol data around
+				// so that it can be referenced freely.
+				return false;
+			}
 			if (this.partitions.size !== 1) {
 				throw new Error(`Local Symbol data has more than one partition.`);
 			}
-			let parition = this.partitions.values().next().value;
-			if (parition !== null) {
-				parition.end();
-			}
-			this.partitions = null;
+			this.end();
 			return true;
 		} else if (ts.isSourceFile(node)) {
 			let fileName = node.fileName;
@@ -1389,13 +1391,19 @@ export class DataManager implements SymbolDataContext {
 		return result;
 	}
 
-	public documemntProcessed(fileName: string): void {
+	public documentProcessed(fileName: string, close: boolean): void {
 		let data = this.getDocumentData(fileName);
 		if (data === undefined) {
 			throw new Error(`No document data for file ${fileName}`);
 		}
-		data.end();
-		this.documentDatas.set(fileName, null);
+		// Finalize the document by emitting the contains, diagnostic,
+		// document symbols, and event elements relating to this doc.
+		// Skip this is the document is a certain class of file that 
+		// needs to remain open while other source files are indexed.
+		if (close) {
+			data.end();
+			this.documentDatas.set(fileName, null);
+		}
 	}
 
 	public getSymbolData(symbolId: SymbolId): SymbolData | undefined {
@@ -1529,7 +1537,12 @@ class Visitor implements ResolverContext {
 			return b.length - a.length;
 		});
 		this.projectRoot = options.projectRoot;
-		this.emit(this.vertex.metaData(Version, URI.file(this.projectRoot).toString(true)));
+		const toolInfo = {
+			name: 'lsif-tsc',
+			version: toolVersion,
+			args: ts.sys.args,
+		}
+		this.emit(this.vertex.metaData(Version, URI.file(this.projectRoot).toString(true), toolInfo));
 		this.project = this.vertex.project();
 		const configLocation = tsConfigFile !== undefined ? path.dirname(tsConfigFile) : undefined;
 		let compilerOptions = this.program.getCompilerOptions();
@@ -1737,7 +1750,30 @@ class Visitor implements ResolverContext {
 
 		this.currentSourceFile = undefined;
 		this._currentDocumentData = undefined;
-		this.dataManager.documemntProcessed(sourceFile.fileName);
+
+		// For context, see https://github.com/microsoft/lsif-node/issues/84.
+		//
+		// For now, do not close any document. This shouldn't affect anything other
+		// than the order of elements. In particular, this will move the document
+		// end events to the bottom of the index, which may make the output of this
+		// indexer less useful for use in editor extensions (but perfectly fine for
+		// Sourcegraph uploads).
+		//
+		// There are two types of files for which setting this value to true causes
+		// problems, and I don't currently have a good understanding of how to classify
+		// them into one type of file:
+		//
+		//     1) declaration files (things that contain `declare`)
+		//     2) imported json files
+		// 
+		// It would be great to try to retain the previous behavior for all file types
+		// where this issue doesn't occur.
+		// 
+		// Instead of the previous behavior, we'll rely on the projectProcessed function 
+		// to close all open symbols and documents and emit whatever elements are still 
+		// in the buffer once the project is finished being indexed.
+		this.dataManager.documentProcessed(sourceFile.fileName, false);
+
 		for (let disposable of this.disposables.get(sourceFile.fileName)!) {
 			disposable();
 		}

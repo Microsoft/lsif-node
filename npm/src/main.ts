@@ -86,11 +86,23 @@ function makeAbsolute(p: string, root?: string): string {
 	}
 }
 
+const makeIntIdGenerator = () => {
+	let counter = Number.MAX_SAFE_INTEGER;
+
+	return () => {
+		return counter--;
+	}
+}
+
+const uuidIdGenerator = () => {
+	return uuid.v4()
+}
+
 class Linker {
 
 	private _idGenerator: (() => Id) | undefined;
 
-	constructor() {
+	constructor(private intIdGenerator: () => Id) {
 	}
 
 	protected get idGenerator(): () => Id {
@@ -105,14 +117,9 @@ class Linker {
 			return;
 		}
 		if (typeof id === 'number') {
-			let counter = Number.MAX_SAFE_INTEGER;
-			this._idGenerator = () => {
-				return counter--;
-			};
+			this._idGenerator = this.intIdGenerator
 		} else {
-			this._idGenerator = () => {
-				return uuid.v4();
-			};
+			this._idGenerator = uuidIdGenerator
 		}
 	}
 
@@ -167,8 +174,8 @@ class ExportLinker extends Linker {
 
 	private packageInformation: PackageInformation | undefined;
 
-	constructor(private projectRoot: string, private packageJson: PackageJson) {
-		super();
+	constructor(private projectRoot: string, private packageJson: PackageJson, intIdGenerator: () => Id) {
+		super(intIdGenerator);
 	}
 
 	public handleMoniker(moniker: Moniker): void {
@@ -176,7 +183,6 @@ class ExportLinker extends Linker {
 			return;
 		}
 		this.ensureIdGenerator(moniker.id);
-		emit(moniker);
 		let tscMoniker: TscMoniker = TscMoniker.parse(moniker.identifier);
 		if (TscMoniker.hasPath(tscMoniker) && this.isPackaged(path.join(this.projectRoot, tscMoniker.path))) {
 			this.ensurePackageInformation();
@@ -212,8 +218,8 @@ class ImportLinker extends Linker {
 
 	private packageData: Map<string,  { packageInfo: PackageInformation, packageJson: PackageJson } | null>;
 
-	constructor(private projectRoot: string) {
-		super();
+	constructor(private projectRoot: string, intIdGenerator: () => Id) {
+		super(intIdGenerator);
 		this.packageData = new Map();
 	}
 
@@ -222,7 +228,6 @@ class ImportLinker extends Linker {
 			return;
 		}
 		this.ensureIdGenerator(moniker.id);
-		emit(moniker);
 		const tscMoniker = TscMoniker.parse(moniker.identifier);
 		if (!TscMoniker.hasPath(tscMoniker)) {
 			return;
@@ -354,11 +359,12 @@ export function main(): void {
 		return;
 	}
 
+	const intIdGenerator = makeIntIdGenerator()
 	let exportLinker: ExportLinker | undefined;
 	if (packageJson !== undefined) {
-		exportLinker = new ExportLinker(projectRoot, packageJson);
+		exportLinker = new ExportLinker(projectRoot, packageJson, intIdGenerator);
 	}
-	const importLinker: ImportLinker = new ImportLinker(projectRoot);
+	const importLinker: ImportLinker = new ImportLinker(projectRoot, intIdGenerator);
 	let input: NodeJS.ReadStream | fs.ReadStream = process.stdin;
 	if (options.in !== undefined && fs.existsSync(options.in)) {
 		input = fs.createReadStream(options.in, { encoding: 'utf8'});
@@ -373,9 +379,8 @@ export function main(): void {
 		if (element.type === ElementTypes.vertex) {
 			switch(element.label) {
 				case VertexLabels.moniker:
-					if (element.kind === MonikerKind.local) {
-						emit(line);
-					} else {
+					emit(line);
+					if (element.kind !== MonikerKind.local) {
 						if (exportLinker !== undefined) {
 							exportLinker.handleMoniker(element);
 						}
