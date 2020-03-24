@@ -176,7 +176,6 @@ class ExportLinker extends Linker {
 			return;
 		}
 		this.ensureIdGenerator(moniker.id);
-		emit(moniker);
 		let tscMoniker: TscMoniker = TscMoniker.parse(moniker.identifier);
 		if (TscMoniker.hasPath(tscMoniker) && this.isPackaged(path.join(this.projectRoot, tscMoniker.path))) {
 			this.ensurePackageInformation();
@@ -222,7 +221,6 @@ class ImportLinker extends Linker {
 			return;
 		}
 		this.ensureIdGenerator(moniker.id);
-		emit(moniker);
 		const tscMoniker = TscMoniker.parse(moniker.identifier);
 		if (!TscMoniker.hasPath(tscMoniker)) {
 			return;
@@ -373,9 +371,8 @@ export function main(): void {
 		if (element.type === ElementTypes.vertex) {
 			switch(element.label) {
 				case VertexLabels.moniker:
-					if (element.kind === MonikerKind.local) {
-						emit(line);
-					} else {
+					emit(line);
+					if (element.kind !== MonikerKind.local) {
 						if (exportLinker !== undefined) {
 							exportLinker.handleMoniker(element);
 						}
