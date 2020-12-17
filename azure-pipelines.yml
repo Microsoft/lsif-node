@@ -2,7 +2,7 @@ trigger:
 - master
 
 pool:
-  vmImage: 'Ubuntu-16.04'
+  vmImage: 'vs2017-win2016'
 
 steps:
 - task: NodeTool@0
@@ -22,9 +22,16 @@ steps:
 - script: |
     npm run test
   displayName: 'Run unit tests'
+  continueOnError: true
 
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'JUnit'
     testResultsFiles: 'util/junit.xml'
     testRunTitle: 'Run unit tests'
+
+- task: RichCodeNavIndexer@0
+  inputs:
+    serviceConnection: 'rich-code-navigation'
+    githubServiceConnection: Microsoft
+    languages: typescript

@@ -54,6 +54,7 @@ export enum VertexLabels {
  */
 export type Uri = string;
 
+//
 export interface V extends Element {
 	type: ElementTypes.vertex;
 	label: VertexLabels;
