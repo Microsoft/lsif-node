@@ -26,6 +26,12 @@ steps:
     npm run test
   displayName: 'Run unit tests'
 
+- task: RichCodeNavIndexer@0
+  displayName: VS Rich Code Navigation Upload
+  inputs:
+    languages: typescript
+  continueOnError: true
+
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'JUnit'
