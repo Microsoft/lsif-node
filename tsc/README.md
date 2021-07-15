@@ -1,5 +1,5 @@
 # lsif-tsc
-> *Languag Server Index Format tool for TypeScript*
+> *Language Server Index Format tool for TypeScript*
 
 ### Requirements
 
